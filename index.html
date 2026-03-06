@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Team Away Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --surface: #111827;
+      --surface2: #1a2335;
+      --border: #1f2d42;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --aurora: #34d399;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --danger: #f87171;
+      --card-radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Aurora background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: -10%;
+      width: 60%;
+      height: 50%;
+      background: radial-gradient(ellipse, rgba(56,189,248,0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      top: 10%;
+      right: -15%;
+      width: 50%;
+      height: 40%;
+      background: radial-gradient(ellipse, rgba(52,211,153,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .header-left h1 span { color: var(--accent); }
+    .header-left p {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      margin-top: 0.4rem;
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+    /* Buttons */
+    .btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0b0f1a;
+    }
+    .btn-primary:hover { background: #7dd3fc; transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(248,113,113,0.3);
+      font-size: 0.7rem;
+      padding: 0.3rem 0.6rem;
+    }
+    .btn-danger:hover { background: rgba(248,113,113,0.1); }
+    .btn-sm {
+      font-size: 0.7rem;
+      padding: 0.35rem 0.75rem;
+    }
+
+    /* View tabs */
+    .view-tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.25rem;
+      margin-bottom: 2rem;
+      width: fit-content;
+    }
+    .tab {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.5rem 1.2rem;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #0b0f1a;
+      font-weight: 500;
+    }
+    .tab:not(.active):hover { color: var(--text); }
+
+    /* Layout grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 780px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Sidebar */
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 1.25rem;
+    }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    /* Team list */
+    .team-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .team-member {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .team-member:hover { background: var(--surface2); }
+    .team-member.selected { background: var(--surface2); outline: 1px solid var(--border); }
+    .member-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .member-dot:hover {
+      transform: scale(1.4);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
+    }
+    .member-name {
+      font-size: 0.8rem;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .member-count {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 0.1rem 0.4rem;
+      border-radius: 20px;
+    }
+
+    /* Add member input */
+    .add-member-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .input {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      transition: border 0.15s;
+      width: 100%;
+    }
+    .input:focus { border-color: var(--accent); }
+    .input::placeholder { color: var(--text-muted); }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .stat-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem; letter-spacing: 0.05em; }
+
+    /* Main content */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Calendar */
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .cal-month {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .cal-nav-btns { display: flex; gap: 0.5rem; }
+    .nav-btn {
+      font-family: 'DM Mono', monospace;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .cal-header {
+      text-align: center;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      padding: 0.4rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .cal-day {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem;
+      min-height: 72px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .cal-day:hover { border-color: var(--accent); }
+    .cal-day.empty { background: transparent; border-color: transparent; cursor: default; }
+    .cal-day.today { border-color: var(--accent); }
+    .cal-day.today .day-num { color: var(--accent); font-weight: 600; }
+    .cal-day.past { opacity: 0.45; }
+    .day-num {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+    .day-events { display: flex; flex-direction: column; gap: 2px; }
+    .day-event {
+      font-size: 0.6rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.92;
+      color: #0b0f1a;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .day-event.type-wfh {
+      opacity: 0.7;
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.15) 0px,
+        rgba(255,255,255,0.15) 3px,
+        transparent 3px,
+        transparent 7px
+      ) !important;
+      border: 1px solid currentColor;
+    }
+    .day-event.type-medical {
+      border: 1.5px dashed rgba(0,0,0,0.3);
+      opacity: 0.8;
+    }
+
+    /* Legend */
+    .cal-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .legend-swatch {
+      width: 28px;
+      height: 11px;
+      border-radius: 3px;
+      background: #64748b;
+      flex-shrink: 0;
+    }
+    .legend-swatch.type-wfh {
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.25) 0px,
+        rgba(255,255,255,0.25) 3px,
+        transparent 3px,
+        transparent 7px
+      );
+      border: 1px solid #64748b;
+    }
+    .legend-swatch.type-medical {
+      border: 1.5px dashed #64748b;
+      background: #64748b88;
+    }
+    .day-more {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      padding: 0 2px;
+    }
+
+    /* List view */
+    .list-filters {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-chip.active, .filter-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(56,189,248,0.08);
+    }
+
+    .absence-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .absence-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color 0.15s;
+    }
+    .absence-item:hover { border-color: rgba(56,189,248,0.3); }
+    .absence-color-bar {
+      width: 4px;
+      border-radius: 4px;
+      align-self: stretch;
+      flex-shrink: 0;
+      min-height: 40px;
+    }
+    .absence-info { flex: 1; }
+    .absence-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .absence-dates {
+      font-size: 0.72rem;
+      color: var(--accent);
+      margin-top: 0.2rem;
+    }
+    .absence-note {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+    .absence-badge {
+      font-size: 0.65rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .absence-actions { display: flex; gap: 0.4rem; align-items: center; }
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    .empty-state .big { font-family: 'Syne', sans-serif; font-size: 3rem; opacity: 0.2; }
+
+    /* Timeline view */
+    .timeline-header {
+      display: grid;
+      gap: 3px;
+      margin-bottom: 4px;
+    }
+    .timeline-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .tl-label {
+      width: 110px;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: right;
+      padding-right: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tl-grid { flex: 1; display: flex; position: relative; }
+    .tl-day-col {
+      flex: 1;
+      min-width: 0;
+      height: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .tl-day-col:hover { background: var(--surface2); }
+    .tl-day-col.today { border-color: var(--accent); }
+    .tl-day-col.filled { border-color: transparent; }
+    .tl-header-cell {
+      flex: 1;
+      text-align: center;
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      padding: 0.2rem 0;
+    }
+    .tl-header-cell.today-h { color: var(--accent); font-weight: 600; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 460px;
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+    .form-row { margin-bottom: 1rem; }
+    .form-label {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .form-row select.input {
+      appearance: none;
+      cursor: pointer;
+    }
+    .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.78rem;
+      color: var(--text);
+      z-index: 200;
+      animation: toastIn 0.2s ease;
+      pointer-events: none;
+    }
+    @keyframes toastIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <h1>Team <span>Away</span> Tracker</h1>
+      <p>// VACATION · TRAVEL · LEAVE · OUT OF OFFICE</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="openModal()">+ Add Absence</button>
+      <button class="btn btn-primary" onclick="exportCSV()">↓ Export CSV</button>
+    </div>
+  </header>
+
+  <!-- View tabs -->
+  <div class="view-tabs">
+    <button class="tab active" onclick="switchView('calendar', this)">Calendar</button>
+    <button class="tab" onclick="switchView('list', this)">List</button>
+    <button class="tab" onclick="switchView('timeline', this)">Timeline</button>
+  </div>
+
+  <div class="main-grid">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Stats -->
+      <div class="card">
+        <div class="card-title">Overview</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-num" id="stat-total">0</div>
+            <div class="stat-label">Absences</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="stat-current">0</div>
+            <div class="stat-label">Away Now</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="stat-upcoming">0</div>
+            <div class="stat-label">Upcoming</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="stat-members">0</div>
+            <div class="stat-label">Members</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team members -->
+      <div class="card">
+        <div class="card-title">Team Members</div>
+        <div class="team-list" id="team-list"></div>
+        <div class="add-member-row">
+          <input class="input" id="new-member-input" placeholder="Add member..." maxlength="30" onkeydown="if(event.key==='Enter')addMember()"/>
+          <button class="btn btn-primary btn-sm" onclick="addMember()">+</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Views -->
+    <main>
+      <!-- Calendar View -->
+      <div id="view-calendar" class="view active">
+        <div class="calendar-nav">
+          <div class="cal-month" id="cal-month-label"></div>
+          <div class="cal-nav-btns">
+            <button class="nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+            <button class="nav-btn" onclick="goToday()">Today</button>
+            <button class="nav-btn" onclick="changeMonth(1)">&#8250;</button>
+          </div>
+        </div>
+        <div class="cal-legend">
+          <div class="legend-item"><div class="legend-swatch"></div> Solid = away (vacation/travel/etc.)</div>
+          <div class="legend-item"><div class="legend-swatch type-wfh"></div> Striped = Telework</div>
+          <div class="legend-item"><div class="legend-swatch type-medical"></div> Dashed = Duty Travel</div>
+          <div class="legend-item" style="color:var(--text-muted);font-style:italic;">Icon shows type · colour shows person</div>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+
+      <!-- List View -->
+      <div id="view-list" class="view">
+        <div class="list-filters" id="list-filters">
+          <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+          <button class="filter-chip" onclick="setFilter('current', this)">Away Now</button>
+          <button class="filter-chip" onclick="setFilter('upcoming', this)">Upcoming</button>
+          <button class="filter-chip" onclick="setFilter('past', this)">Past</button>
+        </div>
+        <div class="absence-list" id="absence-list"></div>
+      </div>
+
+      <!-- Timeline View -->
+      <div id="view-timeline" class="view">
+        <div id="timeline-container"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add Absence Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2 id="modal-title">Add Absence</h2>
+    <input type="hidden" id="edit-id"/>
+    <div class="form-row">
+      <label class="form-label">Team Member *</label>
+      <select class="input" id="form-member" required>
+        <option value="">— select member —</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Type</label>
+      <select class="input" id="form-type">
+        <option value="Vacation">✈ Vacation</option>
+        <option value="Telework">🏠 Telework</option>
+        <option value="Duty Travel">📋 Duty Travel</option>
+        <option value="Conference">🎤 Conference</option>
+        <option value="Personal">🌿 Personal Day</option>
+        <option value="Other">📌 Other</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Start Date *</label>
+      <input class="input" type="date" id="form-start" required/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">End Date *</label>
+      <input class="input" type="date" id="form-end" required/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Note (optional)</label>
+      <input class="input" type="text" id="form-note" placeholder="e.g. Family vacation, conference name..."/>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAbsence()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─────────── State ───────────
+  const COLORS = [
+    '#38bdf8','#34d399','#a78bfa','#fb923c',
+    '#f472b6','#facc15','#60a5fa','#4ade80',
+    '#e879f9','#f87171','#2dd4bf','#fbbf24'
+  ];
+
+  const TYPE_META = {
+    'Vacation':     { icon: '✈', cls: '' },
+    'Telework':     { icon: '🏠', cls: 'type-wfh' },
+    'Duty Travel':  { icon: '📋', cls: 'type-medical' },
+    'Conference':   { icon: '🎤', cls: '' },
+    'Personal':     { icon: '🌿', cls: '' },
+    'Other':        { icon: '📌', cls: '' },
+  };
+  function typeMeta(t) { return TYPE_META[t] || { icon: '📌', cls: '' }; }
+
+  let state = {
+    members: [],
+    absences: [],
+    currentMonth: new Date().getMonth(),
+    currentYear: new Date().getFullYear(),
+    selectedMember: 'all',
+    listFilter: 'all',
+    currentView: 'calendar',
+  };
+
+  function load() {
+    try {
+      const s = localStorage.getItem('away-tracker');
+      if (s) Object.assign(state, JSON.parse(s));
+    } catch(e) {}
+    // Seed defaults if empty
+    if (!state.members.length) {
+      ['David','Delia','Mona','Lance','Maggie'].forEach(addMemberByName);
+    }
+  }
+
+  function save() {
+    localStorage.setItem('away-tracker', JSON.stringify({
+      members: state.members,
+      absences: state.absences
+    }));
+  }
+
+  function getMemberColor(name) {
+    const m = state.members.find(x => x.name === name);
+    return m ? m.color : '#64748b';
+  }
+
+  // ─────────── Members ───────────
+  function addMember() {
+    const input = document.getElementById('new-member-input');
+    addMemberByName(input.value.trim());
+    input.value = '';
+  }
+
+  function addMemberByName(name) {
+    if (!name) return;
+    if (state.members.find(m => m.name.toLowerCase() === name.toLowerCase())) {
+      showToast('Member already exists');
+      return;
+    }
+    state.members.push({ name, color: COLORS[state.members.length % COLORS.length] });
+    save();
+    renderAll();
+  }
+
+  function updateDotColor(name, color) {
+    // Live preview only — don't re-render (would destroy the open picker)
+    const id = 'color-pick-' + name.replace(/\s/g,'_');
+    const picker = document.getElementById(id);
+    if (picker) {
+      const dot = picker.parentElement.querySelector('.member-dot');
+      if (dot) dot.style.background = color;
+    }
+  }
+
+  function changeMemberColor(name, color) {
+    const m = state.members.find(x => x.name === name);
+    if (m) { m.color = color; save(); renderAll(); }
+  }
+
+  function deleteMember(name) {
+    if (!confirm(`Remove "${name}" and all their absences?`)) return;
+    state.members = state.members.filter(m => m.name !== name);
+    state.absences = state.absences.filter(a => a.member !== name);
+    save();
+    renderAll();
+    showToast('Member removed');
+  }
+
+  // ─────────── Absences ───────────
+  function openModal(id) {
+    document.getElementById('modal-overlay').classList.add('open');
+    const memberSel = document.getElementById('form-member');
+    memberSel.innerHTML = '<option value="">— select member —</option>';
+    state.members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name; opt.textContent = m.name;
+      memberSel.appendChild(opt);
+    });
+
+    if (id) {
+      const a = state.absences.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('modal-title').textContent = 'Edit Absence';
+      document.getElementById('edit-id').value = id;
+      document.getElementById('form-member').value = a.member;
+      document.getElementById('form-type').value = a.type;
+      document.getElementById('form-start').value = a.start;
+      document.getElementById('form-end').value = a.end;
+      document.getElementById('form-note').value = a.note || '';
+    } else {
+      document.getElementById('modal-title').textContent = 'Add Absence';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('form-start').value = '';
+      document.getElementById('form-end').value = '';
+      document.getElementById('form-note').value = '';
+      document.getElementById('form-type').value = 'Vacation';
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  function saveAbsence() {
+    const member = document.getElementById('form-member').value;
+    const type = document.getElementById('form-type').value;
+    const start = document.getElementById('form-start').value;
+    const end = document.getElementById('form-end').value;
+    const note = document.getElementById('form-note').value.trim();
+    const editId = document.getElementById('edit-id').value;
+
+    if (!member || !start || !end) { showToast('Please fill all required fields'); return; }
+    if (end < start) { showToast('End date must be after start'); return; }
+
+    if (editId) {
+      const idx = state.absences.findIndex(x => x.id === editId);
+      if (idx !== -1) state.absences[idx] = { id: editId, member, type, start, end, note };
+    } else {
+      state.absences.push({ id: Date.now().toString(), member, type, start, end, note });
+    }
+    save();
+    closeModal();
+    renderAll();
+    showToast(editId ? 'Absence updated' : 'Absence added ✓');
+  }
+
+  function deleteAbsence(id) {
+    if (!confirm('Delete this absence?')) return;
+    state.absences = state.absences.filter(a => a.id !== id);
+    save();
+    renderAll();
+    showToast('Removed');
+  }
+
+  function openModalForDay(dateStr) {
+    openModal();
+    document.getElementById('form-start').value = dateStr;
+    document.getElementById('form-end').value = dateStr;
+  }
+
+  // ─────────── Helpers ───────────
+  const today = () => new Date().toISOString().slice(0,10);
+  function dateRange(start, end) {
+    const dates = []; let d = new Date(start + 'T00:00:00');
+    const e = new Date(end + 'T00:00:00');
+    while (d <= e) { dates.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+    return dates;
+  }
+  function absencesForDate(dateStr) {
+    return state.absences.filter(a => dateStr >= a.start && dateStr <= a.end);
+  }
+  function dayCount(start, end) {
+    return Math.round((new Date(end) - new Date(start)) / 86400000) + 1;
+  }
+  function fmtDate(d) {
+    return new Date(d + 'T00:00:00').toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'numeric' });
+  }
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // ─────────── Stats ───────────
+  function updateStats() {
+    const t = today();
+    const filtered = state.selectedMember === 'all'
+      ? state.absences
+      : state.absences.filter(a => a.member === state.selectedMember);
+    document.getElementById('stat-total').textContent = filtered.length;
+    document.getElementById('stat-current').textContent = filtered.filter(a => t >= a.start && t <= a.end).length;
+    document.getElementById('stat-upcoming').textContent = filtered.filter(a => a.start > t).length;
+    document.getElementById('stat-members').textContent = state.members.length;
+  }
+
+  // ─────────── Team List ───────────
+  function renderTeamList() {
+    const el = document.getElementById('team-list');
+    el.innerHTML = '';
+
+    // All option
+    const allDiv = document.createElement('div');
+    allDiv.className = 'team-member' + (state.selectedMember === 'all' ? ' selected' : '');
+    allDiv.onclick = () => { state.selectedMember = 'all'; renderAll(); };
+    allDiv.innerHTML = `
+      <div class="member-dot" style="background:#64748b"></div>
+      <span class="member-name">Everyone</span>
+      <span class="member-count">${state.absences.length}</span>`;
+    el.appendChild(allDiv);
+
+    state.members.forEach(m => {
+      const count = state.absences.filter(a => a.member === m.name).length;
+      const div = document.createElement('div');
+      div.className = 'team-member' + (state.selectedMember === m.name ? ' selected' : '');
+      div.onclick = () => { state.selectedMember = m.name; renderAll(); };
+      div.innerHTML = `
+        <div class="member-dot-wrap" style="position:relative;flex-shrink:0;" onclick="event.stopPropagation()">
+          <div class="member-dot" style="background:${m.color};cursor:pointer;" title="Change colour" onclick="document.getElementById('color-pick-${m.name.replace(/\s/g,'_')}').click()"></div>
+          <input type="color" id="color-pick-${m.name.replace(/\s/g,'_')}" value="${m.color}" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;"
+            oninput="updateDotColor('${m.name}', this.value)"
+            onchange="changeMemberColor('${m.name}', this.value)"/>
+        </div>
+        <span class="member-name">${m.name}</span>
+        <span class="member-count">${count}</span>
+        <button class="btn btn-danger" style="padding:2px 5px;font-size:0.6rem;" onclick="event.stopPropagation();deleteMember('${m.name}')">✕</button>`;
+      el.appendChild(div);
+    });
+  }
+
+  // ─────────── Calendar ───────────
+  function renderCalendar() {
+    const { currentMonth: mo, currentYear: yr } = state;
+    document.getElementById('cal-month-label').textContent = `${MONTHS[mo]} ${yr}`;
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+
+    ['SUN','MON','TUE','WED','THU','FRI','SAT'].forEach(d => {
+      const h = document.createElement('div');
+      h.className = 'cal-header'; h.textContent = d;
+      grid.appendChild(h);
+    });
+
+    const firstDay = new Date(yr, mo, 1).getDay();
+    const daysInMonth = new Date(yr, mo+1, 0).getDate();
+    const todayStr = today();
+
+    for (let i = 0; i < firstDay; i++) {
+      const e = document.createElement('div'); e.className = 'cal-day empty'; grid.appendChild(e);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      if (ds === todayStr) cell.classList.add('today');
+      if (ds < todayStr) cell.classList.add('past');
+      cell.onclick = () => openModalForDay(ds);
+
+      let events = absencesForDate(ds);
+      if (state.selectedMember !== 'all') events = events.filter(a => a.member === state.selectedMember);
+
+      const numDiv = document.createElement('div');
+      numDiv.className = 'day-num'; numDiv.textContent = d;
+      cell.appendChild(numDiv);
+
+      const evDiv = document.createElement('div');
+      evDiv.className = 'day-events';
+      const show = events.slice(0, 2);
+      show.forEach(a => {
+        const { icon, cls } = typeMeta(a.type);
+        const ev = document.createElement('div');
+        ev.className = 'day-event ' + cls;
+        ev.style.background = getMemberColor(a.member);
+        ev.title = `${a.member} — ${a.type}${a.note ? ' · ' + a.note : ''}`;
+        ev.innerHTML = `<span style="font-size:0.65rem;line-height:1">${icon}</span><span>${a.member}</span>`;
+        evDiv.appendChild(ev);
+      });
+      if (events.length > 2) {
+        const more = document.createElement('div');
+        more.className = 'day-more'; more.textContent = `+${events.length - 2} more`;
+        evDiv.appendChild(more);
+      }
+      cell.appendChild(evDiv);
+      grid.appendChild(cell);
+    }
+  }
+
+  function changeMonth(delta) {
+    state.currentMonth += delta;
+    if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
+    if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
+    renderCalendar();
+  }
+
+  function goToday() {
+    const n = new Date();
+    state.currentMonth = n.getMonth();
+    state.currentYear = n.getFullYear();
+    renderCalendar();
+  }
+
+  // ─────────── List View ───────────
+  function setFilter(f, el) {
+    state.listFilter = f;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderList();
+  }
+
+  function renderList() {
+    const el = document.getElementById('absence-list');
+    const t = today();
+    let abs = [...state.absences];
+
+    if (state.selectedMember !== 'all') abs = abs.filter(a => a.member === state.selectedMember);
+
+    if (state.listFilter === 'current') abs = abs.filter(a => t >= a.start && t <= a.end);
+    else if (state.listFilter === 'upcoming') abs = abs.filter(a => a.start > t);
+    else if (state.listFilter === 'past') abs = abs.filter(a => a.end < t);
+
+    abs.sort((a,b) => a.start.localeCompare(b.start));
+
+    if (!abs.length) {
+      el.innerHTML = `<div class="empty-state"><div class="big">✈</div><div>No absences found</div></div>`;
+      return;
+    }
+
+    el.innerHTML = '';
+    abs.forEach(a => {
+      const color = getMemberColor(a.member);
+      const days = dayCount(a.start, a.end);
+      const status = a.end < t ? 'past' : (a.start > t ? 'upcoming' : 'now');
+      const statusLabel = { past:'Past', upcoming:'Upcoming', now:'Away Now' }[status];
+      const div = document.createElement('div');
+      div.className = 'absence-item';
+      div.innerHTML = `
+        <div class="absence-color-bar" style="background:${color}"></div>
+        <div class="absence-info">
+          <div class="absence-name">${a.member}</div>
+          <div class="absence-dates">${fmtDate(a.start)} → ${fmtDate(a.end)} · ${days} day${days!==1?'s':''}</div>
+          ${a.note ? `<div class="absence-note">${typeMeta(a.type).icon} ${a.type} · ${a.note}</div>` : `<div class="absence-note">${typeMeta(a.type).icon} ${a.type}</div>`}
+        </div>
+        <div class="absence-badge">${statusLabel}</div>
+        <div class="absence-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openModal('${a.id}')">Edit</button>
+          <button class="btn btn-danger" onclick="deleteAbsence('${a.id}')">✕</button>
+        </div>`;
+      el.appendChild(div);
+    });
+  }
+
+  // ─────────── Timeline ───────────
+  function renderTimeline() {
+    const container = document.getElementById('timeline-container');
+    const t = today();
+    const n = new Date();
+    const startDate = new Date(n.getFullYear(), n.getMonth(), 1);
+    const endDate = new Date(n.getFullYear(), n.getMonth() + 2, 0);
+
+    const days = [];
+    let d = new Date(startDate);
+    while (d <= endDate) { days.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+
+    const members = state.selectedMember === 'all' ? state.members : state.members.filter(m => m.name === state.selectedMember);
+
+    let html = `<div style="overflow-x:auto;">
+    <div style="min-width:${110 + days.length * 18}px;">`;
+
+    // Header row
+    html += `<div class="timeline-row" style="margin-bottom:6px;">
+      <div class="tl-label">Member</div>
+      <div class="tl-grid">`;
+    let lastMonth = '';
+    days.forEach(ds => {
+      const dm = new Date(ds + 'T00:00:00');
+      const mo = MONTHS[dm.getMonth()].slice(0,3);
+      const dd = dm.getDate();
+      const isToday = ds === t;
+      html += `<div class="tl-header-cell${isToday?' today-h':''}">
+        ${dd === 1 ? `<div style="font-size:0.55rem;color:var(--accent);letter-spacing:0.08em">${mo}</div>` : ''}
+        ${dd}
+      </div>`;
+    });
+    html += `</div></div>`;
+
+    // Member rows
+    members.forEach(m => {
+      html += `<div class="timeline-row" style="margin-bottom:3px;">
+        <div class="tl-label" title="${m.name}">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${m.color};margin-right:5px;"></span>
+          ${m.name}
+        </div>
+        <div class="tl-grid">`;
+
+      days.forEach(ds => {
+        const isAway = state.absences.some(a => a.member === m.name && ds >= a.start && ds <= a.end);
+        const isToday = ds === t;
+        if (isAway) {
+          html += `<div class="tl-day-col filled" style="background:${m.color};opacity:0.75;border-radius:3px;" title="${m.name} away ${ds}"></div>`;
+        } else {
+          html += `<div class="tl-day-col${isToday?' today':''}" onclick="openModalForDay('${ds}')" title="Add absence for ${m.name} on ${ds}"></div>`;
+        }
+      });
+      html += `</div></div>`;
+    });
+
+    html += `</div></div>`;
+    container.innerHTML = html;
+  }
+
+  // ─────────── Export ───────────
+  function exportCSV() {
+    let csv = 'Member,Type,Start,End,Days,Note\n';
+    state.absences
+      .sort((a,b) => a.start.localeCompare(b.start))
+      .forEach(a => {
+        csv += `"${a.member}","${a.type}","${a.start}","${a.end}","${dayCount(a.start,a.end)}","${a.note||''}"\n`;
+      });
+    const blob = new Blob([csv], { type:'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `team-away-tracker-${today()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─────────── Toast ───────────
+  function showToast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast'; el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+
+  // ─────────── Views ───────────
+  function switchView(view, el) {
+    state.currentView = view;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    renderAll();
+  }
+
+  function renderAll() {
+    updateStats();
+    renderTeamList();
+    if (state.currentView === 'calendar') renderCalendar();
+    else if (state.currentView === 'list') renderList();
+    else if (state.currentView === 'timeline') renderTimeline();
+  }
+
+  // ─────────── Init ───────────
+  load();
+  renderAll();
+</script>
+</body>
+</html>
